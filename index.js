@@ -1,12 +1,21 @@
 import axios from "axios";
+import * as cheerio from "cheerio";
 
 async function crawlPage(url) {
   try {
     const res = await axios.get(url);
-    // const data = await res.json();
+    const htmlContent = res.data;
 
-    console.log(res.data.substring(0, 500) + "...");
-    return res.data;
+    const extractedLinks = parseHTML(htmlContent);
+
+    console.log(`Enlaces encontrados en ${url}:`);
+    extractedLinks.forEach((link) => {
+      console.log(
+        `- Texto: "<span class="math-inline">${link.text}", URL\: "</span>${link.href}"`
+      );
+    });
+
+    return extractedLinks;
   } catch (error) {
     if (error.response) {
       console.error(
@@ -19,6 +28,21 @@ async function crawlPage(url) {
     }
     return null;
   }
+}
+
+function parseHTML(htmlContent) {
+  const $ = cheerio.load(htmlContent);
+  const linksList = $("a");
+  const extractedLinks = [];
+
+  linksList.each((index, element) => {
+    const href = $(element).attr("href");
+    const text = $(element).text().trim();
+
+    if (href) extractedLinks.push({ text, href });
+  });
+
+  return extractedLinks;
 }
 
 const TEST_URL = "";
